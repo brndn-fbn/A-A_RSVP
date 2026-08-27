@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>RSVP Responses — Ariane &amp; Aaron</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mrs+Saint+Delafield&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --champagne:      #F4E9D8;
+  --champagne-deep: #EAD9BC;
+  --paper:           #FBF5EA;
+  --beige:           #DEC9A5;
+  --dusty-rose:      #C9968E;
+  --dusty-rose-deep: #A96F67;
+  --dusty-blue:      #93A9B1;
+  --dusty-blue-deep: #6D8790;
+  --ink:             #43372F;
+  --ink-soft:        #8A7A6C;
+  --line:            rgba(67,55,47,0.14);
+  --font-script:  'Pauline', 'Mrs Saint Delafield', cursive;
+  --font-display: 'Flatlion', 'Jost', sans-serif;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+body{
+  margin:0;
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(201,150,142,0.10), transparent 60%),
+    radial-gradient(ellipse 900px 600px at 90% 10%, rgba(147,169,177,0.12), transparent 55%),
+    var(--paper);
+  color:var(--ink);
+  font-family:var(--font-display);
+  font-weight:300;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{ max-width:920px; margin:0 auto; padding:clamp(40px,7vw,72px) clamp(20px,5vw,40px) 80px; }
+
+header{ text-align:center; margin-bottom:40px; }
+.eyebrow{ font-size:.7rem; letter-spacing:.28em; text-transform:uppercase; color:var(--ink-soft); font-weight:500; }
+.title{ font-family:var(--font-script); font-size:clamp(2.4rem,7vw,3.4rem); margin-top:10px; color:var(--ink); }
+.subtitle{ margin-top:8px; color:var(--ink-soft); font-size:.9rem; }
+
+.stats{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:36px; }
+.stat{ background:var(--champagne); border:1px solid var(--line); border-radius:10px; padding:18px 8px; text-align:center; }
+.stat__num{ font-size:clamp(1.3rem,3.6vw,1.9rem); font-weight:500; color:var(--dusty-rose-deep); font-variant-numeric:tabular-nums; }
+.stat__label{ margin-top:4px; font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); }
+
+.toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+.toolbar__filters{ display:flex; gap:8px; flex-wrap:wrap; }
+.chip{
+  font-size:.72rem; letter-spacing:.04em; padding:8px 14px; border-radius:20px;
+  border:1px solid var(--line); background:var(--paper); color:var(--ink-soft);
+  cursor:pointer; transition:all .25s ease;
+}
+.chip.is-active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.btn-refresh{
+  font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; padding:9px 16px; border-radius:20px;
+  border:1px solid var(--ink); background:transparent; color:var(--ink); cursor:pointer; transition:all .25s ease;
+}
+.btn-refresh:hover{ background:var(--ink); color:var(--paper); }
+
+.list{ display:flex; flex-direction:column; gap:12px; }
+.row{
+  background:var(--paper); border:1px solid var(--line); border-radius:12px;
+  padding:18px 22px; display:grid; grid-template-columns:1fr auto; gap:6px 16px; align-items:start;
+}
+.row__name{ font-size:1.02rem; font-weight:500; }
+.row__meta{ font-size:.78rem; color:var(--ink-soft); margin-top:2px; }
+.row__message{ grid-column:1 / -1; margin-top:8px; font-size:.86rem; color:var(--ink); font-style:italic; border-top:1px solid var(--line); padding-top:10px; }
+.pill{
+  font-size:.64rem; letter-spacing:.08em; text-transform:uppercase; padding:5px 11px; border-radius:20px;
+  white-space:nowrap; height:fit-content;
+}
+.pill--yes{ background:rgba(147,169,177,0.22); color:var(--dusty-blue-deep); }
+.pill--no{ background:rgba(201,150,142,0.22); color:var(--dusty-rose-deep); }
+
+.empty, .loading, .error{
+  text-align:center; padding:60px 20px; color:var(--ink-soft); font-size:.9rem;
+  border:1px dashed var(--line); border-radius:12px;
+}
+.error{ color:var(--dusty-rose-deep); }
+
+footer{ text-align:center; margin-top:60px; font-size:.72rem; color:var(--ink-soft); letter-spacing:.04em; }
+
+@media (max-width:640px){
+  .stats{ grid-template-columns:repeat(2,1fr); }
+  .row{ grid-template-columns:1fr; }
+  .pill{ justify-self:start; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Private — for the couple</p>
+    <h1 class="title">RSVP Responses</h1>
+    <p class="subtitle">Live guest responses for Ariane &amp; Aaron's wedding, December 30, 2026</p>
+  </header>
+
+  <div class="stats" id="stats">
+    <div class="stat"><div class="stat__num" id="statTotal">–</div><div class="stat__label">Responses</div></div>
+    <div class="stat"><div class="stat__num" id="statAttending">–</div><div class="stat__label">Attending</div></div>
+    <div class="stat"><div class="stat__num" id="statHeadcount">–</div><div class="stat__label">Total Headcount</div></div>
+    <div class="stat"><div class="stat__num" id="statCeremony">–</div><div class="stat__label">Ceremony</div></div>
+    <div class="stat"><div class="stat__num" id="statReception">–</div><div class="stat__label">Reception</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar__filters" id="filters">
+      <button class="chip is-active" data-filter="all" type="button">All</button>
+      <button class="chip" data-filter="yes" type="button">Attending</button>
+      <button class="chip" data-filter="no" type="button">Declined</button>
+      <button class="chip" data-filter="ceremony" type="button">Ceremony only</button>
+      <button class="chip" data-filter="reception" type="button">Reception only</button>
+      <button class="chip" data-filter="both" type="button">Both</button>
+    </div>
+    <button class="btn-refresh" id="refreshBtn" type="button">Refresh</button>
+  </div>
+
+  <div id="listWrap">
+    <div class="loading" id="loadingState">Loading responses…</div>
+  </div>
+
+  <footer>Responses are stored privately for this invitation and are only visible to people with this link.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var allEntries = [];
+  var currentFilter = 'all';
+  var listWrap = document.getElementById('listWrap');
+  var EVENT_LABELS = { both:'Ceremony & Reception', ceremony:'Ceremony only', reception:'Reception only' };
+
+  function escapeHtml(s){
+    return String(s || '').replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  function renderStats(entries){
+    var attending = entries.filter(function(e){ return e.attending === 'yes'; });
+    var headcount = attending.reduce(function(sum, e){ return sum + (parseInt(e.guestCount, 10) || 1); }, 0);
+    var ceremony = attending.filter(function(e){ return e.whichEvent === 'ceremony' || e.whichEvent === 'both'; }).length;
+    var reception = attending.filter(function(e){ return e.whichEvent === 'reception' || e.whichEvent === 'both'; }).length;
+
+    document.getElementById('statTotal').textContent = entries.length;
+    document.getElementById('statAttending').textContent = attending.length;
+    document.getElementById('statHeadcount').textContent = headcount;
+    document.getElementById('statCeremony').textContent = ceremony;
+    document.getElementById('statReception').textContent = reception;
+  }
+
+  function matchesFilter(entry, filter){
+    if(filter === 'all') return true;
+    if(filter === 'yes') return entry.attending === 'yes';
+    if(filter === 'no') return entry.attending === 'no';
+    if(filter === 'ceremony') return entry.whichEvent === 'ceremony';
+    if(filter === 'reception') return entry.whichEvent === 'reception';
+    if(filter === 'both') return entry.whichEvent === 'both';
+    return true;
+  }
+
+  function renderList(){
+    var filtered = allEntries.filter(function(e){ return matchesFilter(e, currentFilter); });
+
+    if(allEntries.length === 0){
+      listWrap.innerHTML = '<div class="empty">No RSVPs yet — responses will show up here as guests submit the form.</div>';
+      return;
+    }
+    if(filtered.length === 0){
+      listWrap.innerHTML = '<div class="empty">No responses match this filter.</div>';
+      return;
+    }
+
+    var html = '<div class="list">' + filtered.map(function(e){
+      var when = '';
+      try{ when = new Date(e.submittedAt).toLocaleString('en-PH', { dateStyle:'medium', timeStyle:'short' }); }catch(err){ when = e.submittedAt || ''; }
+      var metaBits = [];
+      if(e.attending === 'yes'){
+        metaBits.push(EVENT_LABELS[e.whichEvent] || 'Celebration');
+        metaBits.push((e.guestCount || 1) + ' guest' + (Number(e.guestCount) === 1 ? '' : 's'));
+      }
+      metaBits.push(when);
+      return '' +
+        '<div class="row">' +
+          '<div>' +
+            '<div class="row__name">' + escapeHtml(e.name) + '</div>' +
+            '<div class="row__meta">' + escapeHtml(metaBits.filter(Boolean).join(' · ')) + '</div>' +
+          '</div>' +
+          '<span class="pill ' + (e.attending === 'yes' ? 'pill--yes' : 'pill--no') + '">' +
+            (e.attending === 'yes' ? 'Attending' : 'Declined') +
+          '</span>' +
+          (e.message ? '<div class="row__message">“' + escapeHtml(e.message) + '”</div>' : '') +
+        '</div>';
+    }).join('') + '</div>';
+
+    listWrap.innerHTML = html;
+  }
+
+  async function loadResponses(){
+    listWrap.innerHTML = '<div class="loading">Loading responses…</div>';
+    try{
+      if(!window.storage || typeof window.storage.list !== 'function'){
+        throw new Error('Storage is unavailable in this context.');
+      }
+      var listResult = await window.storage.list('rsvp:', true);
+      var keys = (listResult && listResult.keys) ? listResult.keys : [];
+
+      var entries = [];
+      for(var i = 0; i < keys.length; i++){
+        try{
+          var res = await window.storage.get(keys[i], true);
+          if(res && res.value){
+            var parsed = JSON.parse(res.value);
+            entries.push(parsed);
+          }
+        }catch(innerErr){
+          console.error('Could not read', keys[i], innerErr);
+        }
+      }
+
+      entries.sort(function(a, b){
+        return new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0);
+      });
+
+      allEntries = entries;
+      renderStats(entries);
+      renderList();
+    }catch(err){
+      console.error(err);
+      listWrap.innerHTML = '<div class="error">Couldn\'t load responses. This page needs to be opened as a Claude artifact link for it to read saved RSVPs. Try refreshing, or open it via the same link you used to share the invitation.</div>';
+      renderStats([]);
+    }
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', loadResponses);
+  document.getElementById('filters').addEventListener('click', function(e){
+    var btn = e.target.closest('.chip');
+    if(!btn) return;
+    document.querySelectorAll('#filters .chip').forEach(function(c){ c.classList.remove('is-active'); });
+    btn.classList.add('is-active');
+    currentFilter = btn.getAttribute('data-filter');
+    renderList();
+  });
+
+  loadResponses();
+})();
+</script>
+</body>
+</html>
