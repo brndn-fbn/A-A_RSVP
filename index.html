@@ -226,7 +226,7 @@
       background:
         radial-gradient(ellipse 700px 500px at 50% 20%, rgba(201, 150, 142, 0.16), transparent 60%),
         var(--champagne);
-      transition: opacity .7s var(--ease), visibility .7s var(--ease);
+      transition: opacity .9s var(--ease-soft), visibility .9s var(--ease-soft);
     }
 
     .envelope-gate.is-hidden {
@@ -240,12 +240,24 @@
       flex-direction: column;
       align-items: center;
       padding: 24px;
-      transition: opacity .6s ease .4s, transform .6s ease .4s;
+      /* No transform, ever: a transformed ancestor would become the
+     containing block for the card's position:fixed flight (see JS),
+     so the card would fly relative to this box instead of the true
+     viewport and never quite reach the edges. */
     }
 
-    .envelope-gate.is-open .envelope-gate__inner {
+    /* Only the surrounding copy (eyebrow + hint) fades away once the
+   envelope opens — the envelope and the card inside it stay at full
+   opacity throughout the whole peek → fly sequence. Fading the whole
+   .envelope-gate__inner here would cascade to the card while it's
+   mid-flight (opacity multiplies through descendants regardless of
+   position:fixed) and make it visibly dissolve before it lands. */
+    .envelope-gate__copy {
+      transition: opacity .5s ease;
+    }
+
+    .envelope-gate.is-open .envelope-gate__copy {
       opacity: 0;
-      transform: translateY(-18px);
     }
 
     .envelope-gate__eyebrow {
@@ -290,12 +302,14 @@
       transform: translateY(6px) scale(.9);
     }
 
-    /* .envelope__interior (behind the card) and .envelope__shell (the front
-   pocket panel + flap, in front of the card) share this tilt/drop
-   treatment. Keeping .envelope itself transform-free matters: a
-   transformed ancestor would hijack position:fixed on
-   .envelope__photo-wrap during its flight (see JS), making it
-   impossible to fly to the true viewport edges. */
+    /* .envelope__back (the lining, behind the card) and .envelope__shell
+   (the front pocket + triangular flap, in front of the card) share this
+   tilt/drop treatment. Keeping .envelope itself transform-free matters: a
+   transformed ancestor would hijack position:fixed on .envelope__card
+   during its flight (see JS), making it impossible to fly to the true
+   viewport edges. The same reason is why .envelope-gate__copy's fade
+   below (on the surrounding text, not the envelope) animates opacity
+   only, never transform. */
     .envelope__tilt {
       transform: rotate(-1.6deg);
       transition: transform .5s var(--ease-soft), opacity .7s ease;
@@ -311,55 +325,68 @@
       opacity: 0;
     }
 
-    .envelope__interior {
-      position: absolute;
-      left: 4%;
-      right: 4%;
-      top: 0;
-      height: 46%;
-      border-radius: 9px 9px 2px 2px;
-      background: linear-gradient(180deg, rgba(43, 34, 27, 0.4), rgba(43, 34, 27, 0.16) 80%), var(--dusty-rose-deep);
-      box-shadow: inset 0 10px 18px rgba(28, 22, 17, 0.35);
-    }
-
-    .envelope__shell {
+    /* ---------- the lining, visible behind/above the card once open ---------- */
+    .envelope__back {
       position: absolute;
       inset: 0;
-      perspective: 1400px;
+      z-index: 1;
+      border-radius: 10px;
+      background:
+        linear-gradient(180deg, rgb(221, 156, 144) 0%, rgba(43, 34, 27, 0.14) 34%, var(--dusty-rose-deep) 62%, var(--dusty-rose) 100%);
+      box-shadow: inset 0 12px 22px rgba(28, 22, 17, 0.35), 0 18px 40px rgba(67, 55, 47, 0.16);
     }
 
-    .envelope__photo-wrap {
+    /* ---------- the card tucked inside the pocket ----------
+   The pocket's front face is cut with a V-notch at the top (see
+   .envelope__pocket below) that is exactly as deep as the flap is
+   tall — 46% of the envelope's height. At rest the card sits below
+   that depth, so the solid part of the pocket fully hides it; on
+   peek it rises up through the notch so its top edge shows through
+   the gap left by the open flap. */
+    .envelope__card {
       position: absolute;
       left: 50%;
-      top: 11%;
-      width: 76%;
-      height: 74%;
-      transform: translateX(-50%) translateY(-3%) scale(.97) rotate(-2deg);
-      transition: transform .5s var(--ease) .05s, box-shadow .5s ease .05s;
+      top: 5%;
+      width: 90%;
+      height: 90%;
+      z-index: 2;
+      transform: translateX(-50%) translateY(0%) scale(.95) rotate(-2deg);
+      transition: transform .6s var(--ease-soft), box-shadow .5s ease;
       box-shadow: 0 10px 20px rgba(67, 55, 47, 0.22);
       border-radius: 3px;
       overflow: hidden;
     }
 
-    .envelope:hover .envelope__photo-wrap {
-      transform: translateX(-50%) translateY(-8%) scale(.98) rotate(-1deg);
+    .envelope:hover .envelope__card {
+      transform: translateX(-50%) translateY(-6%) scale(.955) rotate(-1.6deg);
     }
 
-    .envelope.is-open .envelope__photo-wrap {
-      transform: translateX(-50%) translateY(-48%) scale(1.05) rotate(.5deg);
-      box-shadow: 0 22px 42px rgba(67, 55, 47, 0.3);
+    /* Step 1 of the reveal: the card rises up through the pocket's V
+   notch and peeks out, before it takes flight. translateY here is a
+   percentage of the CARD's own (short) height, not the envelope's —
+   -69% of this card's 52%-tall box works out to roughly a third of
+   the envelope's full height, clearing the notch with room to spare. */
+    .envelope.is-peek .envelope__card {
+      transform: translateX(-50%) translateY(-70%) scale(1) rotate(1deg);
+      box-shadow: 0 16px 30px rgba(67, 55, 47, 0.26);
     }
 
-    /* Flight stage: JS switches this element to position:fixed and animates
-   its top/left/width/height/border-radius inline (see script). This
-   transition governs that animation. z-index jumps here because during
-   flight the card needs to sit above literally everything, including
-   the pocket panel that normally covers its lower half. */
-    .envelope__photo-wrap.is-flying {
-      transition: top .95s var(--ease-soft), left .95s var(--ease-soft),
-        width .95s var(--ease-soft), height .95s var(--ease-soft),
-        border-radius .95s var(--ease-soft);
+    /* Step 2, flight stage: JS switches this element to position:fixed and
+   animates its top/left/width/height/border-radius inline (see script).
+   This transition governs that animation. z-index jumps here because
+   during flight the card needs to sit above literally everything,
+   including the pocket panel that normally covers its lower half. */
+    .envelope__card.is-flying {
+      position: fixed;
       z-index: 1001;
+
+      transition:
+        top 1s var(--ease-soft),
+        left 1s var(--ease-soft),
+        width 1s var(--ease-soft),
+        height 1s var(--ease-soft),
+        border-radius 1s var(--ease-soft);
+
       box-shadow: none;
     }
 
@@ -367,7 +394,7 @@
       width: 100%;
       height: 100%;
       background:
-        url('images/rsvp-01-card.jpg');
+        url('images/rsvp-01-opening.jpg');
       background-size: cover;
       background-position: left center;
       border: 1px solid rgba(67, 55, 47, 0.15);
@@ -382,7 +409,7 @@
       transition: border-radius .4s ease;
     }
 
-    .envelope__photo-wrap.is-flying .envelope__photo {
+    .envelope__card.is-flying .envelope__photo {
       border-radius: 0;
     }
 
@@ -394,85 +421,169 @@
       transition: opacity .3s ease;
     }
 
-    .envelope__photo-wrap.is-flying .envelope__photo-script {
+    .envelope__card.is-flying .envelope__photo-script {
       opacity: 0;
     }
 
-    .envelope__body {
+    /* ---------- shell: the front pocket + triangular flap, as one unit
+   for the closing "drop away" treatment once the card has flown out ---------- */
+    .envelope__shell {
       position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      top: 44%;
-      background:
-        repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 5px),
-        linear-gradient(180deg, var(--dusty-rose) 0%, var(--dusty-rose-deep) 100%);
-      border-radius: 0 0 4px 4px;
-      border-top: 1px solid rgba(67, 55, 47, 0.22);
-      box-shadow: 0 18px 40px rgba(67, 55, 47, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -12px 20px -12px rgba(67, 55, 47, 0.25);
+      inset: 0;
+      z-index: 3;
+      perspective: 1400px;
     }
 
-    .envelope__body::after {
-      /* subtle inner fold lines */
+    /* Rounds the whole envelope's outer silhouette. Kept separate from
+   .envelope__pocket (which carries the clip-path below) because
+   clip-path overrides border-radius entirely on the element it's set
+   on — this wrapper clips the pocket's already-notched shape down to
+   a rounded rect instead, so the two bottom corners come out rounded
+   without disturbing the V notch cut into the top. */
+    .envelope__pocket-clip {
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    /* The envelope body. Its silhouette is the full rectangle MINUS a
+   wide V notch cut into the top edge — from full width at the very
+   top corners, down to a point at dead center, 46% of the way down.
+   That notch is exactly the shape of .envelope__flap below, so when
+   the flap lies flat the two fit together into one solid rectangle;
+   when the flap lifts, the notch is what the card peeks through. */
+    .envelope__pocket {
+      position: absolute;
+      inset: 0;
+      clip-path: polygon(0 0, 50% 46%, 100% 0, 100% 100%, 0 100%);
+      background:
+        repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 5px),
+        linear-gradient(165deg, var(--dusty-rose) 0%, var(--dusty-rose-deep) 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -14px 22px -14px rgba(67, 55, 47, 0.28);
+    }
+
+    .envelope__pocket::after {
+      /* subtle side-fold seams, echoing where a real envelope's left
+     and right flaps would be tucked in underneath */
       content: "";
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(135deg, transparent 48%, rgba(0, 0, 0, 0.07) 49%, transparent 50%),
-        linear-gradient(-135deg, transparent 48%, rgba(0, 0, 0, 0.07) 49%, transparent 50%);
+        linear-gradient(115deg, transparent 42%, rgba(0, 0, 0, 0.07) 43%, transparent 44%),
+        linear-gradient(-115deg, transparent 42%, rgba(0, 0, 0, 0.07) 43%, transparent 44%);
       opacity: .5;
       pointer-events: none;
     }
 
+    /* The triangular flap — hinged at the top edge, sized and shaped
+   to exactly fill the notch cut into .envelope__pocket above. Starts
+   CLOSED and flat, sealing the envelope. */
     .envelope__flap {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 56%;
-      clip-path: polygon(0 0, 100% 0, 50% 100%);
-      background:
-        repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.06) 0px, rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 5px),
-        linear-gradient(200deg, var(--dusty-rose-deep), var(--dusty-rose));
+      height: 46%;
+
+      /* Remove clip-path from the parent */
+      clip-path: none;
+
       transform-origin: top center;
       transform-style: preserve-3d;
       backface-visibility: hidden;
-      /* Resting state: already folded open/back, like a real opened
-     envelope — no click-triggered "opening" animation needed for it. */
-      transform: rotateX(168deg);
-      box-shadow: 0 6px 14px rgba(67, 55, 47, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transform: rotateX(0deg);
+
+      transition: transform .75s var(--ease-soft);
+
+
+      z-index: 4;
+
+      /*
+   * Prevent the seal from being clipped.
+   */
+      overflow: visible;
     }
 
-    .envelope__ribbon {
+    /* Create the triangular flap visually instead */
+    .envelope__flap::before {
+      content: "";
       position: absolute;
-      left: 50%;
-      top: 16%;
-      width: 14px;
-      height: 40%;
-      transform: translateX(-50%) rotate(-3deg);
-      background: linear-gradient(90deg, var(--beige-deep), var(--beige), var(--beige-deep));
-      opacity: 0;
+      inset: 0;
+
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+
+      background:
+        repeating-linear-gradient(115deg,
+          rgba(255, 255, 255, 0.06) 0px,
+          rgba(255, 255, 255, 0.06) 1px,
+          transparent 1px,
+          transparent 5px),
+        linear-gradient(200deg,
+          var(--dusty-rose-deep),
+          var(--dusty-rose));
+
+      box-shadow:
+        0 6px 14px rgba(67, 55, 47, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+      pointer-events: none;
+    }
+
+    /* Opening: the flap lifts on its top hinge and swings back and away
+   from the viewer — backface-visibility hides it once it passes 90°,
+   just like folding open a real envelope. */
+    .envelope.is-open .envelope__flap {
+      transform: rotateX(172deg);
     }
 
     .envelope__seal {
       position: absolute;
+
       left: 50%;
-      top: 34%;
+      top: 100%;
+
       width: 46px;
       height: 46px;
+
       background:
-        radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.45), transparent 32%),
-        radial-gradient(circle at 38% 32%, var(--pink-mid), var(--dusty-rose-deep) 72%);
+        radial-gradient(circle at 32% 28%,
+          rgba(255, 255, 255, 0.45),
+          transparent 32%),
+        radial-gradient(circle at 38% 32%,
+          var(--pink-mid),
+          var(--dusty-rose-deep) 72%);
+
       border-radius: 50%;
+
       display: flex;
       align-items: center;
       justify-content: center;
+
       font-family: var(--font-script);
       font-size: 1.05rem;
       color: var(--paper);
-      box-shadow: 0 4px 10px rgba(67, 55, 47, 0.4), 0 0 0 3px rgba(251, 245, 234, 0.18);
+
+      box-shadow:
+        0 4px 10px rgba(67, 55, 47, 0.4),
+        0 0 0 3px rgba(251, 245, 234, 0.18);
+
+      opacity: 1;
+
+      transform:
+        translate(-50%, -50%) scale(1) rotate(0deg);
+
+      transition:
+        opacity .3s ease,
+        transform .3s ease;
+
+      z-index: 10;
+    }
+
+    /* The wax seal "breaks" and fades right as the flap begins lifting. */
+    .envelope.is-open .envelope__seal {
       opacity: 0;
-      transform: translate(-50%, -50%) scale(.4) rotate(25deg);
+      transform: translate(-50%, -50%) scale(.5) rotate(20deg);
     }
 
     .envelope-gate__hint {
@@ -1542,10 +1653,10 @@
       }
 
       .envelope__flap,
-      .envelope__photo-wrap,
+      .envelope__card,
       .envelope__seal,
       .envelope-gate,
-      .envelope-gate__inner,
+      .envelope-gate__copy,
       .reveal,
       .scroll-cue,
       .tap-dot,
@@ -1570,25 +1681,26 @@
      ============================================================ -->
   <div class="envelope-gate" id="envelopeGate">
     <div class="envelope-gate__inner">
-      <p class="envelope-gate__eyebrow">You are cordially invited</p>
+      <p class="envelope-gate__eyebrow envelope-gate__copy">You are cordially invited</p>
 
       <div class="envelope" id="envelope" role="button" tabindex="0" aria-label="Open your wedding invitation">
-        <div class="envelope__interior envelope__tilt" aria-hidden="true"></div>
-        <div class="envelope__photo-wrap">
+        <div class="envelope__back envelope__tilt" aria-hidden="true"></div>
+        <div class="envelope__card" id="envelopeCard">
           <div class="envelope__photo">
             <span class="envelope__photo-script">A &amp; A</span>
           </div>
         </div>
         <div class="envelope__shell envelope__tilt">
-          <div class="envelope__body"></div>
-          <div class="envelope__ribbon" aria-hidden="true"></div>
-          <div class="envelope__flap">
+          <div class="envelope__pocket-clip" aria-hidden="true">
+            <div class="envelope__pocket"></div>
+          </div>
+          <div class="envelope__flap" aria-hidden="true">
             <div class="envelope__seal">A&amp;A</div>
           </div>
         </div>
       </div>
 
-      <p class="envelope-gate__hint"><span class="tap-dot"></span>Tap the envelope to open</p>
+      <p class="envelope-gate__hint envelope-gate__copy"><span class="tap-dot"></span>Tap the envelope to open</p>
     </div>
 
     <svg class="sprig sprig--gate-l" viewBox="0 0 90 150" fill="none" stroke="var(--dusty-blue)" stroke-width="1.1"
@@ -1627,14 +1739,6 @@
         <path d="M45 82 C57 76 63 63 59 50 C48 56 44 68 45 82 Z" fill="var(--dusty-blue)" fill-opacity=".16" />
         <path d="M45 48 C38 41 36 30 41 21 C47 28 48 38 45 48 Z" fill="var(--dusty-blue)" fill-opacity=".16" />
       </svg>
-      <!-- <svg class="sprig sprig--br" viewBox="0 0 90 150" fill="none" stroke="var(--dusty-rose)" stroke-width="1.1" aria-hidden="true">
-      <path d="M45 148 C43 100 47 55 45 6" stroke-linecap="round"/>
-      <path d="M45 118 C30 112 22 96 27 80 C40 87 46 102 45 118 Z" fill="var(--dusty-rose)" fill-opacity=".16"/>
-      <path d="M45 118 C60 112 68 96 63 80 C50 87 44 102 45 118 Z" fill="var(--dusty-rose)" fill-opacity=".16"/>
-      <path d="M45 82 C33 76 27 63 31 50 C42 56 46 68 45 82 Z" fill="var(--dusty-rose)" fill-opacity=".16"/>
-      <path d="M45 82 C57 76 63 63 59 50 C48 56 44 68 45 82 Z" fill="var(--dusty-rose)" fill-opacity=".16"/>
-      <path d="M45 48 C38 41 36 30 41 21 C47 28 48 38 45 48 Z" fill="var(--dusty-rose)" fill-opacity=".16"/>
-    </svg> -->
 
       <p class="eyebrow hero__eyebrow">Together with their families</p>
       <h1 class="hero__names">Ariane <span>&amp;</span> Aaron</h1>
@@ -1669,9 +1773,6 @@
         </svg>
       </div>
 
-      <!-- ENVELOPE_AFTER_REVEAL: this mark is only shown when the JS config
-         below is set to 'watermark'. Currently set to 'drop' (envelope
-         shrinks/tumbles away instead) — see openEnvelope() in the script. -->
       <div class="hero__envelope-mark" id="heroEnvelopeMark" aria-hidden="true">A&amp;A</div>
     </section>
 
@@ -1937,7 +2038,6 @@
               </svg>
               <span><img src="images/rsvp-01-begin.jpg" alt="Ariane and Aaron"></span>
             </div>
-            <!-- Replace this placeholder with: <img src="images/rsvp-01-begin.jpg" alt="Ariane and Aaron"> -->
           </div>
           <figcaption class="rsvp__story-caption">
             <span class="rsvp__story-eyebrow">Where it started</span>
@@ -2004,7 +2104,6 @@
                   </svg>
                   <span><img src="images/rsvp-02-middle.jpg" alt="Ariane and Aaron"></span>
                 </div>
-                <!-- Replace this placeholder with: <img src="images/rsvp-02-middle.jpg" alt="Ariane and Aaron"> -->
               </div>
               <figcaption class="rsvp__story-caption">
                 <span class="rsvp__story-eyebrow">The big day</span>
@@ -2041,7 +2140,6 @@
               </svg>
               <span><img src="images/rsvp-03-end.jpg" alt="Ariane and Aaron"></span>
             </div>
-            <!-- Replace this placeholder with: <img src="images/rsvp-03-end.jpg" alt="Ariane and Aaron"> -->
           </div>
           <figcaption class="rsvp__story-caption">
             <span class="rsvp__story-eyebrow">After the vows</span>
@@ -2073,214 +2171,261 @@
 
   </main>
 
-  <script>
-    (function () {
-      "use strict";
-      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      /* ---------- envelope open ---------- */
-      var gate = document.getElementById('envelopeGate');
-      var envelope = document.getElementById('envelope');
-      var opened = false;
-
-      var photoWrap = envelope.querySelector('.envelope__photo-wrap');
-      var tiltEls = envelope.querySelectorAll('.envelope__tilt'); // interior + front shell
-      var heroMark = document.getElementById('heroEnvelopeMark');
-
-      // Comparing two options for what happens to the envelope once the photo
-      // has flown out and become the hero background:
-      //   'watermark' — envelope disappears with the gate; a faint monogram
-      //                 fades in at the corner of the hero afterward.
-      //   'drop'      — the envelope shell (body/flap/seal) itself shrinks,
-      //                 tumbles, and fades away as the photo grows over it.
-      var ENVELOPE_AFTER_REVEAL = 'drop';
-
-      function addDroppingClass() {
-        for (var i = 0; i < tiltEls.length; i++) { tiltEls[i].classList.add('is-dropping'); }
-      }
-
-      function finishReveal() {
-        gate.classList.add('is-hidden');
-        document.body.classList.remove('lock-scroll');
-        var hero = document.getElementById('hero');
-        if (hero) { hero.setAttribute('tabindex', '-1'); hero.focus({ preventScroll: true }); }
-
-        if (ENVELOPE_AFTER_REVEAL === 'watermark' && heroMark) {
-          setTimeout(function () { heroMark.classList.add('is-visible'); }, 300);
-        }
-      }
-
-      function flyPhotoToFullscreen() {
-        if (!photoWrap) { finishReveal(); return; }
-        var rect = photoWrap.getBoundingClientRect();
-        photoWrap.classList.add('is-flying');
-        photoWrap.style.position = 'fixed';
-        photoWrap.style.margin = '0';
-        photoWrap.style.transform = 'none';
-        photoWrap.style.top = rect.top + 'px';
-        photoWrap.style.left = rect.left + 'px';
-        photoWrap.style.width = rect.width + 'px';
-        photoWrap.style.height = rect.height + 'px';
-        /* force reflow so the browser registers the start position before
-           we animate to the end position */
-        void photoWrap.offsetWidth;
-        requestAnimationFrame(function () {
-          photoWrap.style.top = '0px';
-          photoWrap.style.left = '0px';
-          photoWrap.style.width = '100vw';
-          photoWrap.style.height = '100vh';
-          photoWrap.style.borderRadius = '0px';
-        });
-
-        if (ENVELOPE_AFTER_REVEAL === 'drop') { addDroppingClass(); }
-      }
-
-      function openEnvelope() {
-        if (opened) return;
-        opened = true;
-        envelope.classList.add('is-open');
-        gate.classList.add('is-open');
-
-        if (reduceMotion) {
-          if (ENVELOPE_AFTER_REVEAL === 'drop') { addDroppingClass(); }
-          finishReveal();
-          return;
-        }
-
-        // The flap is already resting open, so we just need a short pause for
-        // the card to visibly lift out of the pocket before it takes flight.
-        var liftDelay = 420;
-        var flightDuration = 950;  // matches .is-flying transition duration
-
-        setTimeout(flyPhotoToFullscreen, liftDelay);
-        setTimeout(finishReveal, liftDelay + flightDuration);
-      }
-
-      envelope.addEventListener('click', openEnvelope);
-      envelope.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEnvelope(); }
-      });
-
-      /* ---------- scroll progress ---------- */
-      var progressBar = document.getElementById('scroll-progress');
-      function updateProgress() {
-        var h = document.documentElement;
-        var scrolled = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
-        progressBar.style.width = (isFinite(scrolled) ? scrolled : 0) + '%';
-      }
-      document.addEventListener('scroll', updateProgress, { passive: true });
-
-      /* ---------- reveal on scroll ---------- */
-      var revealEls = document.querySelectorAll('.reveal');
-      if ('IntersectionObserver' in window) {
-        var io = new IntersectionObserver(function (entries) {
-          entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('in-view');
-              io.unobserve(entry.target);
-            }
-          });
-        }, { threshold: 0.15 });
-        revealEls.forEach(function (el) { io.observe(el); });
-      } else {
-        revealEls.forEach(function (el) { el.classList.add('in-view'); });
-      }
-
-      /* ---------- countdown ---------- */
-      var weddingDate = new Date('2026-12-30T13:50:00+08:00');
-      function pad(n) { return String(n).padStart(2, '0'); }
-      function updateCountdown() {
-        var diff = weddingDate - new Date();
-        if (diff < 0) diff = 0;
-        var d = Math.floor(diff / 86400000);
-        var h = Math.floor(diff / 3600000) % 24;
-        var m = Math.floor(diff / 60000) % 60;
-        var s = Math.floor(diff / 1000) % 60;
-        document.getElementById('cdDays').textContent = d;
-        document.getElementById('cdHours').textContent = pad(h);
-        document.getElementById('cdMins').textContent = pad(m);
-        document.getElementById('cdSecs').textContent = pad(s);
-      }
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
-
-      /* ---------- add to calendar ---------- */
-      document.getElementById('addToCalendar').addEventListener('click', function () {
-        var ics = [
-          'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Ariane and Aaron Wedding//EN', 'BEGIN:VEVENT',
-          'UID:' + Date.now() + '@ariane-aaron-wedding',
-          'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z',
-          'DTSTART:20261230T055000Z',
-          'DTEND:20261230T105000Z',
-          'SUMMARY:Ariane & Aaron\'s Wedding',
-          'DESCRIPTION:Ceremony call time 1:00 PM\\, begins 1:50 PM (Manila time). Venue and full schedule to follow.',
-          'LOCATION:Venue to follow',
-          'END:VEVENT', 'END:VCALENDAR'
-        ].join('\r\n');
-        var blob = new Blob([ics], { type: 'text/calendar' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url; a.download = 'Ariane-Aaron-Wedding.ics';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      });
-
-      /* ---------- rsvp form ---------- */
-      var attendRadios = document.querySelectorAll('input[name="attending"]');
-      var guestsField = document.getElementById('guestsField');
-      var eventField = document.getElementById('eventField');
-      attendRadios.forEach(function (radio) {
-        radio.addEventListener('change', function () {
-          var showExtra = radio.value === 'yes' && radio.checked;
-          guestsField.classList.toggle('is-visible', showExtra);
-          eventField.classList.toggle('is-visible', showExtra);
-        });
-      });
-
-      var form = document.getElementById('rsvpForm');
-      var success = document.getElementById('rsvpSuccess');
-      var EVENT_LABELS = { both: 'the ceremony and reception', ceremony: 'the ceremony', reception: 'the reception' };
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var name = document.getElementById('guestName').value.trim();
-        if (!name) { document.getElementById('guestName').focus(); return; }
-        var attending = form.querySelector('input[name="attending"]:checked').value;
-        var whichEventInput = form.querySelector('input[name="whichEvent"]:checked');
-        var whichEvent = (attending === 'yes' && whichEventInput) ? whichEventInput.value : null;
-        var guestCount = attending === 'yes' ? document.getElementById('guestCount').value : null;
-        var message = document.getElementById('guestMessage').value.trim();
-
-        document.getElementById('successTitle').textContent = 'Thank you, ' + name.split(' ')[0] + '!';
-        document.getElementById('successMessage').textContent = attending === 'yes'
-          ? "We can't wait to see you at " + (EVENT_LABELS[whichEvent] || 'the celebration') + "."
-          : "We'll miss you — thank you for letting us know.";
-
-        success.classList.add('is-visible');
-
-        /* Save this response so the couple can see it on the RSVP results
-           page. This uses this page's built-in shared artifact storage,
-           which only works when the page is opened as a Claude artifact
-           (e.g. shared via its claude.ai link) — it will not persist if
-           this HTML file is hosted on its own outside Claude. See the
-           chat notes alongside this file for details and alternatives. */
-        if (window.storage && typeof window.storage.set === 'function') {
-          var entry = {
-            name: name,
-            attending: attending,
-            whichEvent: whichEvent,
-            guestCount: guestCount,
-            message: message,
-            submittedAt: new Date().toISOString()
-          };
-          var key = 'rsvp:' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-          window.storage.set(key, JSON.stringify(entry), true).catch(function (err) {
-            console.error('Could not save RSVP response', err);
-          });
-        }
-      });
-    })();
-  </script>
 
 </body>
+<script>
+  (function () {
+    "use strict";
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ---------- envelope open ---------- */
+    var gate = document.getElementById('envelopeGate');
+    var envelope = document.getElementById('envelope');
+    var opened = false;
+
+    var card = document.getElementById('envelopeCard');
+    var tiltEls = envelope.querySelectorAll('.envelope__tilt'); // back lining + front shell
+    var heroMark = document.getElementById('heroEnvelopeMark');
+
+    var ENVELOPE_AFTER_REVEAL = 'drop';
+
+    function addDroppingClass() {
+      for (var i = 0; i < tiltEls.length; i++) { tiltEls[i].classList.add('is-dropping'); }
+    }
+
+    function finishReveal() {
+      gate.classList.add('is-hidden');
+      document.body.classList.remove('lock-scroll');
+      var hero = document.getElementById('hero');
+      if (hero) { hero.setAttribute('tabindex', '-1'); hero.focus({ preventScroll: true }); }
+
+      if (ENVELOPE_AFTER_REVEAL === 'watermark' && heroMark) {
+        setTimeout(function () { heroMark.classList.add('is-visible'); }, 300);
+      }
+    }
+
+    function flyCardToFullscreen() {
+      if (!card) {
+        finishReveal();
+        return;
+      }
+
+      /*
+       * Capture the card's ACTUAL visible position.
+       *
+       * At this point the card has already completed its
+       * translateY(-69%) peek animation, so getBoundingClientRect()
+       * represents exactly what the user sees.
+       */
+      var rect = card.getBoundingClientRect();
+
+      /*
+       * Disable the normal card transition while we convert it
+       * from an envelope-positioned element into a viewport-positioned
+       * element.
+       */
+      card.style.transition = 'none';
+      card.classList.add('is-flying');
+
+      /*
+       * position: fixed removes the card from the envelope's layout.
+       * We immediately give it the exact viewport coordinates captured
+       * above so there is NO visible jump.
+       */
+      card.style.position = 'fixed';
+      card.style.margin = '0';
+
+      card.style.top = rect.top + 'px';
+      card.style.left = rect.left + 'px';
+      card.style.width = rect.width + 'px';
+      card.style.height = rect.height + 'px';
+
+      /*
+       * The transform was only being used to position the card
+       * inside the envelope. Once top/left are based on the actual
+       * visual rectangle, we no longer need it.
+       */
+      card.style.transform = 'none';
+
+      /*
+       * Force the browser to commit the starting position.
+       */
+      void card.offsetWidth;
+
+      /*
+       * Restore the flight transition.
+       */
+      card.style.transition =
+        'top 1s var(--ease-soft), ' +
+        'left 1s var(--ease-soft), ' +
+        'width 1s var(--ease-soft), ' +
+        'height 1s var(--ease-soft), ' +
+        'border-radius 1s var(--ease-soft)';
+
+      /*
+       * Now animate the SAME physical card that was sitting
+       * inside the envelope toward the viewport edges.
+       */
+      requestAnimationFrame(function () {
+        card.style.top = '0px';
+        card.style.left = '0%';
+        card.style.width = '100vw';
+        card.style.height = '100vh';
+        card.style.borderRadius = '0px';
+      });
+
+      if (ENVELOPE_AFTER_REVEAL === 'drop') {
+        addDroppingClass();
+      }
+    }
+
+    function openEnvelope() {
+      if (opened) return;
+      opened = true;
+      envelope.classList.add('is-open'); // flap lifts, seal breaks (CSS)
+      gate.classList.add('is-open');     // gate copy fades (opacity only)
+
+      if (reduceMotion) {
+        envelope.classList.add('is-peek');
+        if (ENVELOPE_AFTER_REVEAL === 'drop') { addDroppingClass(); }
+        finishReveal();
+        return;
+      }
+
+      // Staged so each step overlaps slightly into the next, reading as
+      // one continuous motion: flap swings open → card peeks through the
+      // notch → card takes flight and grows to fill the screen → a brief
+      // hold so the photo registers → crossfade into the hero underneath
+      // (same photo, so the dissolve looks like the card "becomes" the
+      // page rather than a hard cut).
+      var peekDelay = 380;          // let the flap clear most of the way first
+      var flyDelay = peekDelay + 650;   // let the peek settle before flight
+      var flightDuration = 1000;        // matches .is-flying transition
+      var holdDuration = 350;           // pause at fullscreen before the crossfade
+
+      setTimeout(function () { envelope.classList.add('is-peek'); }, peekDelay);
+      setTimeout(flyCardToFullscreen, flyDelay);
+      setTimeout(finishReveal, flyDelay + flightDuration + holdDuration);
+    }
+
+    envelope.addEventListener('click', openEnvelope);
+    envelope.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEnvelope(); }
+    });
+
+    /* ---------- scroll progress ---------- */
+    var progressBar = document.getElementById('scroll-progress');
+    function updateProgress() {
+      var h = document.documentElement;
+      var scrolled = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+      progressBar.style.width = (isFinite(scrolled) ? scrolled : 0) + '%';
+    }
+    document.addEventListener('scroll', updateProgress, { passive: true });
+
+    /* ---------- reveal on scroll ---------- */
+    var revealEls = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15 });
+      revealEls.forEach(function (el) { io.observe(el); });
+    } else {
+      revealEls.forEach(function (el) { el.classList.add('in-view'); });
+    }
+
+    /* ---------- countdown ---------- */
+    var weddingDate = new Date('2026-12-30T13:50:00+08:00');
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function updateCountdown() {
+      var diff = weddingDate - new Date();
+      if (diff < 0) diff = 0;
+      var d = Math.floor(diff / 86400000);
+      var h = Math.floor(diff / 3600000) % 24;
+      var m = Math.floor(diff / 60000) % 60;
+      var s = Math.floor(diff / 1000) % 60;
+      document.getElementById('cdDays').textContent = d;
+      document.getElementById('cdHours').textContent = pad(h);
+      document.getElementById('cdMins').textContent = pad(m);
+      document.getElementById('cdSecs').textContent = pad(s);
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+
+    /* ---------- add to calendar ---------- */
+    document.getElementById('addToCalendar').addEventListener('click', function () {
+      var ics = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Ariane and Aaron Wedding//EN', 'BEGIN:VEVENT',
+        'UID:' + Date.now() + '@ariane-aaron-wedding',
+        'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z',
+        'DTSTART:20261230T055000Z',
+        'DTEND:20261230T105000Z',
+        'SUMMARY:Ariane & Aaron\'s Wedding',
+        'DESCRIPTION:Ceremony call time 1:00 PM\\, begins 1:50 PM (Manila time). Venue and full schedule to follow.',
+        'LOCATION:Venue to follow',
+        'END:VEVENT', 'END:VCALENDAR'
+      ].join('\r\n');
+      var blob = new Blob([ics], { type: 'text/calendar' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'Ariane-Aaron-Wedding.ics';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    /* ---------- rsvp form ---------- */
+    var attendRadios = document.querySelectorAll('input[name="attending"]');
+    var guestsField = document.getElementById('guestsField');
+    var eventField = document.getElementById('eventField');
+    attendRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        var showExtra = radio.value === 'yes' && radio.checked;
+        guestsField.classList.toggle('is-visible', showExtra);
+        eventField.classList.toggle('is-visible', showExtra);
+      });
+    });
+
+    var form = document.getElementById('rsvpForm');
+    var success = document.getElementById('rsvpSuccess');
+    var EVENT_LABELS = { both: 'the ceremony and reception', ceremony: 'the ceremony', reception: 'the reception' };
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = document.getElementById('guestName').value.trim();
+      if (!name) { document.getElementById('guestName').focus(); return; }
+      var attending = form.querySelector('input[name="attending"]:checked').value;
+      var whichEventInput = form.querySelector('input[name="whichEvent"]:checked');
+      var whichEvent = (attending === 'yes' && whichEventInput) ? whichEventInput.value : null;
+      var guestCount = attending === 'yes' ? document.getElementById('guestCount').value : null;
+      var message = document.getElementById('guestMessage').value.trim();
+
+      document.getElementById('successTitle').textContent = 'Thank you, ' + name.split(' ')[0] + '!';
+      document.getElementById('successMessage').textContent = attending === 'yes'
+        ? "We can't wait to see you at " + (EVENT_LABELS[whichEvent] || 'the celebration') + "."
+        : "We'll miss you — thank you for letting us know.";
+
+      success.classList.add('is-visible');
+
+      if (window.storage && typeof window.storage.set === 'function') {
+        var entry = {
+          name: name,
+          attending: attending,
+          whichEvent: whichEvent,
+          guestCount: guestCount,
+          message: message,
+          submittedAt: new Date().toISOString()
+        };
+        var key = 'rsvp:' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        window.storage.set(key, JSON.stringify(entry), true).catch(function (err) {
+          console.error('Could not save RSVP response', err);
+        });
+      }
+    });
+  })();
+</script>
 
 </html>
