@@ -234,7 +234,8 @@
     .motif { background: var(--champagne); }
     .heart-group { margin-top: 44px; text-align: center; }
     .heart-group__label { font-size: .68rem; letter-spacing: .24em; text-transform: uppercase; color: var(--dusty-blue-deep); font-weight: 500; }
-    .hearts { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(8px, 2vw, 18px); max-width: 420px; margin: 18px auto 0; }
+    .hearts { display: flex; justify-content: center; gap: clamp(8px, 2vw, 14px); margin: 16px auto 0; }
+    .heart { width: clamp(50px, 13.5vw, 64px); }
     .heart svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 8px rgba(67, 55, 47, 0.16)); }
     .heart svg path { stroke: rgba(67, 55, 47, 0.12); stroke-width: .6; }
     .motif__figure { max-width: 560px; margin: 48px auto 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--paper); }
@@ -270,7 +271,8 @@
     .story__dots { display: flex; gap: 9px; }
     .story__dot { width: 8px; height: 8px; border-radius: 50%; border: none; padding: 0; background: rgba(67, 55, 47, .2); cursor: pointer; transition: background .3s, transform .3s; }
     .story__dot.is-active { background: var(--dusty-rose-deep); transform: scale(1.35); }
-    .story__music { position: absolute; top: 0; right: clamp(14px, 4vw, 24px); z-index: 2; display: flex; align-items: center; gap: 6px; background: var(--paper); border: 1px solid var(--line); border-radius: 30px; padding: 6px 12px; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); cursor: pointer; }
+    .story__music { position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); z-index: 400; display: flex; align-items: center; gap: 6px; background: var(--paper); border: 1px solid var(--line); border-radius: 30px; padding: 8px 14px; box-shadow: 0 6px 16px rgba(67, 55, 47, .16); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .6s ease; }
+    .story__music.is-visible { opacity: 1; pointer-events: auto; }
     .story__music:hover { color: var(--ink); }
     .story__music svg { width: 13px; height: 13px; }
 
@@ -351,6 +353,12 @@
 
   <div id="scroll-progress"></div>
   <audio id="themeSong" src="audios/themesong.mp3" loop preload="none"></audio>
+  <button class="story__music" id="musicToggle" type="button" aria-pressed="true" aria-label="Toggle music">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="musicIcon">
+      <path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" />
+    </svg>
+    <span id="musicLabel">Music on</span>
+  </button>
 
   <div class="envelope-gate" id="envelopeGate">
     <div class="envelope-gate__inner">
@@ -694,6 +702,15 @@
           </div>
         </div>
 
+        <div class="heart-group reveal" style="--d:.2s">
+          <p class="heart-group__label">Guests · Champagne, Beige &amp; Brown</p>
+          <div class="hearts">
+            <div class="heart"><svg viewBox="0 0 32 29" aria-label="Champagne"><path fill="#EAD9BC" d="M16 28C16 28 2 18.5 2 9.5C2 5 5.5 2 9.5 2C12.5 2 15 3.7 16 6.2C17 3.7 19.5 2 22.5 2C26.5 2 30 5 30 9.5C30 18.5 16 28 16 28Z"/></svg></div>
+            <div class="heart"><svg viewBox="0 0 32 29" aria-label="Beige"><path fill="#DEC9A5" d="M16 28C16 28 2 18.5 2 9.5C2 5 5.5 2 9.5 2C12.5 2 15 3.7 16 6.2C17 3.7 19.5 2 22.5 2C26.5 2 30 5 30 9.5C30 18.5 16 28 16 28Z"/></svg></div>
+            <div class="heart"><svg viewBox="0 0 32 29" aria-label="Brown"><path fill="#8B6B4A" d="M16 28C16 28 2 18.5 2 9.5C2 5 5.5 2 9.5 2C12.5 2 15 3.7 16 6.2C17 3.7 19.5 2 22.5 2C26.5 2 30 5 30 9.5C30 18.5 16 28 16 28Z"/></svg></div>
+          </div>
+        </div>
+
         <figure class="motif__figure reveal" style="--d:.2s">
           <img src="images/femaledresscode.png" alt="Dress inspiration for ninang and barong for ninong in the wedding colors" loading="lazy">
           <figcaption>Ninang — dress &nbsp;·&nbsp; Ninong — barong</figcaption>
@@ -714,12 +731,6 @@
         <span class="stem"></span>
       </div>
       <div class="story__wrap">
-        <button class="story__music" id="musicToggle" type="button" aria-pressed="true" aria-label="Toggle music">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="musicIcon">
-            <path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" />
-          </svg>
-          <span id="musicLabel">Music on</span>
-        </button>
         <div class="story__head">
           <h2 class="section-heading">Our Story</h2>
           <p class="section-sub">A story of the right kind of love.</p>
@@ -957,6 +968,8 @@
       opened = true;
       envelope.classList.add('is-open');
       gate.classList.add('is-open');
+      musicBtn.classList.add('is-visible');
+      playMusic();
 
       if (reduceMotion) {
         envelope.classList.add('is-peek');
@@ -1073,6 +1086,7 @@
     paintDots();
 
     var audio = document.getElementById('themeSong');
+    audio.volume = 0.35;
     var musicBtn = document.getElementById('musicToggle');
     var musicLabel = document.getElementById('musicLabel');
     var musicWanted = true;
@@ -1083,7 +1097,7 @@
       musicBtn.style.opacity = musicWanted ? '1' : '.7';
     }
     function playMusic() {
-      if (!musicWanted || !storyInView) return;
+      if (!musicWanted) return;
       var p = audio.play();
       if (p && p.catch) { p.catch(function () { /* blocked until user interaction */ }); }
     }
@@ -1098,7 +1112,6 @@
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (entries) {
         storyInView = entries[0].isIntersecting;
-        if (storyInView) { playMusic(); } else { audio.pause(); }
         restartAuto();
       }, { threshold: 0.35 }).observe(storySection);
     }
