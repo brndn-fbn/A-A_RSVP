@@ -299,8 +299,6 @@
     .attend-option span { display: block; text-align: center; padding: 13px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: .8rem; letter-spacing: .04em; color: var(--ink-soft); transition: all .3s var(--ease); }
     .attend-option input:checked+span { background: var(--ink); color: var(--paper); border-color: var(--ink); }
     .attend-option input:focus-visible+span { box-shadow: 0 0 0 3px rgba(147, 169, 177, 0.35); }
-    .field--guests { max-height: 0; opacity: 0; overflow: hidden; margin-bottom: 0; transition: max-height .5s var(--ease), opacity .4s ease, margin-bottom .5s ease; }
-    .field--guests.is-visible { max-height: 120px; opacity: 1; margin-bottom: 22px; }
     .field--event { max-height: 0; opacity: 0; overflow: hidden; margin-bottom: 0; transition: max-height .5s var(--ease), opacity .4s ease, margin-bottom .5s ease; }
     .field--event.is-visible { max-height: 230px; opacity: 1; margin-bottom: 22px; }
     .event-toggle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -308,6 +306,21 @@
     .rsvp__deadline { text-align: center; font-size: .78rem; color: var(--ink-soft); margin-top: 20px; font-style: italic; }
     .placeholder-tag { display: inline-block; padding: 2px 9px; border: 1px dashed var(--ink-soft); border-radius: 20px; font-size: .68rem; color: var(--ink-soft); font-style: italic; }
     .rsvp__submit { width: 100%; margin-top: 6px; }
+
+    .companion-add { display: flex; gap: 8px; }
+    .companion-add input[type="text"] { flex: 1; }
+    .companion-add__btn { padding: 0 20px; white-space: nowrap; flex: none; }
+    .companion-feedback { margin-top: 10px; font-size: .78rem; line-height: 1.5; min-height: 1.2em; }
+    .companion-feedback.is-found { color: var(--dusty-blue-deep); }
+    .companion-feedback.is-notfound { color: var(--dusty-rose-deep); }
+    .companion-card { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: var(--champagne); }
+    .companion-card__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .companion-card__name { font-size: .92rem; font-weight: 500; }
+    .companion-card__remove { appearance: none; border: none; background: transparent; color: var(--ink-soft); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 2px 6px; }
+    .companion-card__remove:hover { color: var(--dusty-rose-deep); }
+    .companion-card .attend-toggle { margin-top: 12px; }
+    .companion-card .event-toggle { margin-top: 10px; }
+
     .rsvp__success { position: absolute; inset: 0; background: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; opacity: 0; pointer-events: none; transform: scale(.96); transition: opacity .55s var(--ease-soft), transform .55s var(--ease-soft); }
     .rsvp__success.is-visible { opacity: 1; pointer-events: auto; transform: scale(1); }
     .rsvp__success svg { width: 40px; height: 40px; margin-bottom: 18px; color: var(--dusty-rose-deep); }
@@ -490,6 +503,7 @@
           <div class="countdown__label">Seconds</div>
         </div>
       </div>
+      <p class="countdown__arrived" id="countdownArrived">Today's the day!</p>
     </section>
 
     <div class="leaf-divider leaf-divider--rose" aria-hidden="true">
@@ -857,14 +871,14 @@
               </div>
             </div>
 
-            <div class="field field--guests is-visible" id="guestsField">
-              <label for="guestCount">Number of Guests</label>
-              <select id="guestCount" name="guestCount">
-                <option value="1">1 — just me</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-              </select>
+            <div class="field" id="companionsField">
+              <label>Bringing someone else from the guest list? <span style="text-transform:none;letter-spacing:0;">(up to 4)</span></label>
+              <div class="companion-add">
+                <input type="text" id="companionInput" placeholder="Type their full name" />
+                <button type="button" class="btn btn--ghost companion-add__btn" id="companionAddBtn">Add</button>
+              </div>
+              <p class="companion-feedback" id="companionFeedback" aria-live="polite"></p>
+              <div id="companionList"></div>
             </div>
 
             <figure class="rsvp__story rsvp__story--middle">
@@ -1034,9 +1048,19 @@
     /* Countdown — ceremony at 2:00 PM Manila time */
     var weddingDate = new Date('2026-12-30T14:00:00+08:00');
     function pad(n) { return String(n).padStart(2, '0'); }
+    var countdownGrid = document.querySelector('.countdown__grid');
+    var countdownArrived = document.getElementById('countdownArrived');
+    var countdownDone = false;
     function updateCountdown() {
       var diff = weddingDate - new Date();
-      if (diff < 0) diff = 0;
+      if (diff <= 0) {
+        if (!countdownDone) {
+          countdownDone = true;
+          if (countdownGrid) countdownGrid.style.display = 'none';
+          if (countdownArrived) countdownArrived.style.display = 'block';
+        }
+        return;
+      }
       document.getElementById('cdDays').textContent = Math.floor(diff / 86400000);
       document.getElementById('cdHours').textContent = pad(Math.floor(diff / 3600000) % 24);
       document.getElementById('cdMins').textContent = pad(Math.floor(diff / 60000) % 60);
@@ -1141,6 +1165,16 @@
 
     /* Guest list gate */
     var GUEST_LIST = [
+      "Alexander Miranda",
+      "Alfie Miranda",
+      "Jennifer Miranda",
+      "Noah Miguel Miranda",
+      "Yuval Iñigo Miranda",
+      "Ethan Marcus Miranda",
+      "Alvin Miranda",
+      "Princess Miranda",
+      "Zia Mikayla Miranda",
+      "Zabdiel Mateo Miranda",
       "Remedios Benzikry",
       "Stav Benzikry",
       "Kyle Yabut",
@@ -1185,10 +1219,64 @@
       "Patricia Camille Baluyut",
       "Edward Karl Navarro",
       "Inah Basco",
-      "Kris Fotale"
+      "Kris Fotaleza",
+      "Nikka",
+      "Nicka",
+      "Amiel Samia",
+      "Chezka Samia",
+      "Arvin Corpuz",
+      "Ann Navarro",
+      "Welkin Angeles",
+      "Lezter Alonzo",
+      "Kynno Miguel Montemayor",
+      "Haira",
+      "Anton Hipolito",
+      "Chanel",
+      "Alejandrino Miranda",
+      "Aida Miranda",
+      "Janelle Mimes",
+      "Jeffrey Mimes",
+      "Jacobo Mimes",
+      "Marielle Mimes",
+      "Yeyi Mimes",
+      "Alfredo Miranda",
+      "Neng Miranda",
+      "Allain Miranda",
+      "Adrian Miranda",
+      "Danica",
+      "Nathaniel Miranda",
+      "Aubrey Miranda",
+      "Felix Miranda",
+      "Anita Lulu Miranda",
+      "Angel Lulu",
+      "Paolo Lulu",
+      "Ashley Lulu",
+      "Armando (Mandy) Miranda",
+      "Precie Miranda",
+      "Presy Miranda",
+      "Arcel Miranda",
+      "Julie Ann Roxas Miranda",
+      "Jordan Miranda",
+      "James Miranda",
+      "Liel",
+      "Jose Miguel (Migs) Panopio",
+      "Jessy Panopio",
+      "Jordan",
+      "Anne",
+      "Mary Joyce (Cheng) Sarmiento",
+      "Lee Sarmiento",
+      "Jam",
+      "Radilyn (Dheydhey) Diolata",
+      "Allen",
+      "Lawrence",
+      "Brian",
+      "Ja",
+      "Warren",
+      "Melissa",
+      "Pantot"
     ];
     function normalizeName(n) {
-      return n.toLowerCase().replace(/[-()]/g, ' ').replace(/\s+/g, ' ').trim();
+      return n.toLowerCase().replace(/[-().,]/g, ' ').replace(/\s+/g, ' ').trim();
     }
     function toTitleCase(n) {
       return n.replace(/\s+/g, ' ').trim().replace(/([a-zA-Z'À-ſ]+)/g, function (word) {
@@ -1239,14 +1327,96 @@
 
     /* RSVP form */
     var attendRadios = document.querySelectorAll('input[name="attending"]');
-    var guestsField = document.getElementById('guestsField');
     var eventField = document.getElementById('eventField');
     attendRadios.forEach(function (radio) {
       radio.addEventListener('change', function () {
         var showExtra = radio.value === 'yes' && radio.checked;
-        guestsField.classList.toggle('is-visible', showExtra);
         eventField.classList.toggle('is-visible', showExtra);
       });
+    });
+
+    /* Companions — each must also be on the official guest list */
+    var MAX_COMPANIONS = 4;
+    var companions = []; // { name, uid }
+    var companionInput = document.getElementById('companionInput');
+    var companionAddBtn = document.getElementById('companionAddBtn');
+    var companionFeedback = document.getElementById('companionFeedback');
+    var companionList = document.getElementById('companionList');
+    var companionUid = 0;
+
+    function isNameTaken(norm) {
+      var primaryName = document.getElementById('guestName').value;
+      if (normalizeName(primaryName) === norm) return true;
+      return companions.some(function (c) { return normalizeName(c.name) === norm; });
+    }
+
+    function renderCompanions() {
+      companionList.innerHTML = '';
+      companions.forEach(function (c) {
+        var card = document.createElement('div');
+        card.className = 'companion-card';
+        card.innerHTML =
+          '<div class="companion-card__head">' +
+            '<span class="companion-card__name">' + c.name + '</span>' +
+            '<button type="button" class="companion-card__remove" aria-label="Remove ' + c.name + '">&times;</button>' +
+          '</div>' +
+          '<div class="attend-toggle companion-card__attend">' +
+            '<label class="attend-option"><input type="radio" name="companion-' + c.uid + '-attending" value="yes" checked /><span>Joyfully accepts</span></label>' +
+            '<label class="attend-option"><input type="radio" name="companion-' + c.uid + '-attending" value="no" /><span>Regretfully declines</span></label>' +
+          '</div>' +
+          '<div class="attend-toggle event-toggle companion-card__event" data-uid="' + c.uid + '">' +
+            '<label class="attend-option"><input type="radio" name="companion-' + c.uid + '-event" value="both" checked /><span>Ceremony &amp; Reception</span></label>' +
+            '<label class="attend-option"><input type="radio" name="companion-' + c.uid + '-event" value="ceremony" /><span>Ceremony only</span></label>' +
+            '<label class="attend-option"><input type="radio" name="companion-' + c.uid + '-event" value="reception" /><span>Reception only</span></label>' +
+          '</div>';
+        card.querySelector('.companion-card__remove').addEventListener('click', function () {
+          companions = companions.filter(function (x) { return x.uid !== c.uid; });
+          renderCompanions();
+        });
+        card.querySelectorAll('input[name="companion-' + c.uid + '-attending"]').forEach(function (radio) {
+          radio.addEventListener('change', function () {
+            var evt = card.querySelector('.companion-card__event');
+            evt.style.display = (radio.value === 'yes' && radio.checked) ? '' : 'none';
+          });
+        });
+        companionList.appendChild(card);
+      });
+      companionAddBtn.disabled = companions.length >= MAX_COMPANIONS;
+      companionInput.disabled = companions.length >= MAX_COMPANIONS;
+      if (companions.length >= MAX_COMPANIONS) {
+        companionFeedback.className = 'companion-feedback';
+        companionFeedback.textContent = 'You can add up to ' + MAX_COMPANIONS + ' guests.';
+      }
+    }
+
+    function addCompanion() {
+      var typed = companionInput.value.trim();
+      if (!typed) { companionInput.focus(); return; }
+      if (companions.length >= MAX_COMPANIONS) return;
+      typed = toTitleCase(typed);
+      var norm = normalizeName(typed);
+      var idx = NORMALIZED_GUESTS.indexOf(norm);
+      if (idx === -1) {
+        companionFeedback.className = 'companion-feedback is-notfound';
+        companionFeedback.textContent = "We couldn't find that name on the guest list.";
+        return;
+      }
+      var matchedName = GUEST_LIST[idx];
+      if (isNameTaken(normalizeName(matchedName))) {
+        companionFeedback.className = 'companion-feedback is-notfound';
+        companionFeedback.textContent = matchedName + ' has already been added.';
+        return;
+      }
+      companions.push({ name: matchedName, uid: ++companionUid });
+      companionInput.value = '';
+      companionFeedback.className = 'companion-feedback is-found';
+      companionFeedback.textContent = matchedName + ' added.';
+      renderCompanions();
+    }
+    companionAddBtn.addEventListener('click', addCompanion);
+    companionInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addCompanion(); } });
+    companionInput.addEventListener('blur', function () {
+      if (companionInput.value.trim()) { companionInput.value = toTitleCase(companionInput.value); }
     });
 
     var form = document.getElementById('rsvpForm');
@@ -1259,24 +1429,37 @@
       var attending = form.querySelector('input[name="attending"]:checked').value;
       var whichEventInput = form.querySelector('input[name="whichEvent"]:checked');
       var whichEvent = (attending === 'yes' && whichEventInput) ? whichEventInput.value : null;
-      var guestCount = attending === 'yes' ? document.getElementById('guestCount').value : null;
       var message = document.getElementById('guestMessage').value.trim();
+      var submittedAt = new Date().toISOString();
+      var partyId = 'party-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
 
+      var records = [{ name: name, attending: attending, whichEvent: whichEvent, isPrimary: true }];
+      companions.forEach(function (c) {
+        var ar = form.querySelector('input[name="companion-' + c.uid + '-attending"]:checked');
+        var evr = form.querySelector('input[name="companion-' + c.uid + '-event"]:checked');
+        var cAttending = ar ? ar.value : 'yes';
+        var cEvent = (cAttending === 'yes' && evr) ? evr.value : null;
+        records.push({ name: c.name, attending: cAttending, whichEvent: cEvent, isPrimary: false });
+      });
+
+      var attendingCount = records.filter(function (r) { return r.attending === 'yes'; }).length;
       document.getElementById('successTitle').textContent = 'Thank you, ' + name.split(' ')[0] + '!';
-      document.getElementById('successMessage').textContent = attending === 'yes'
-        ? "We can't wait to see you at " + (EVENT_LABELS[whichEvent] || 'the celebration') + "."
+      document.getElementById('successMessage').textContent = attendingCount > 0
+        ? "We can't wait to see " + (records.length > 1 ? 'all of you' : 'you') + " at the celebration."
         : "We'll miss you — thank you for letting us know.";
 
       success.classList.add('is-visible');
 
       if (window.storage && typeof window.storage.set === 'function') {
-        var entry = {
-          name: name, attending: attending, whichEvent: whichEvent,
-          guestCount: guestCount, message: message, submittedAt: new Date().toISOString()
-        };
-        var key = 'rsvp:' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-        window.storage.set(key, JSON.stringify(entry), true).catch(function (err) {
-          console.error('Could not save RSVP response', err);
+        records.forEach(function (r) {
+          var entry = {
+            name: r.name, attending: r.attending, whichEvent: r.whichEvent,
+            isPrimary: r.isPrimary, partyId: partyId, message: message, submittedAt: submittedAt
+          };
+          var key = 'rsvp:' + partyId + '-' + Math.random().toString(36).slice(2, 8);
+          window.storage.set(key, JSON.stringify(entry), true).catch(function (err) {
+            console.error('Could not save RSVP response', err);
+          });
         });
       }
     });
